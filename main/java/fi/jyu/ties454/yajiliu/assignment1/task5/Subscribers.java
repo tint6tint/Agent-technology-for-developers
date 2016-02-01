@@ -23,36 +23,38 @@ public class Subscribers extends Agent {
 			temp.setTopic(topic);
 			publishers[i] = temp;
 		}
-		addBehaviour(new CyclicBehaviour() {
-			@Override
-			public void action() {
-				// TODO Auto-generated method stub
-				for (int i = 0; i < 50; i++) {
-					ACLMessage sendMessage = new ACLMessage(ACLMessage.CFP);
-					sendMessage.addReceiver(new AID("Broker", AID.ISLOCALNAME));
-					sendMessage.setContent(publishers[i].getTopic());
-					send(sendMessage);
-				}
-			}
-		});
-		addBehaviour(new TickerBehaviour(this, 10000) {
+
+		// TODO Auto-generated method stub
+		addBehaviour(new TickerBehaviour(this, 20000) {
 			@Override
 			protected void onTick() {
-				// TODO Auto-generated method stub
-				ACLMessage recMessage = blockingReceive();
-				String updatedContent = recMessage.getContent();
-				Message temp = new Message();
-				ObjectMapper mapper = new ObjectMapper();
+				addBehaviour(new CyclicBehaviour() {
+					@Override
+					public void action() {
+						for (int i = 0; i < 50; i++) {
+							ACLMessage sendMessage = new ACLMessage(ACLMessage.CFP);
+							sendMessage.addReceiver(new AID("Broker", AID.ISLOCALNAME));
+							sendMessage.setContent(publishers[i].getTopic());
+							send(sendMessage);
+						}
 
-				try {
-					temp = mapper.readValue(updatedContent, Message.class);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				System.out.println("topic " + temp.getTopic());
-				System.out.println("content received updated" + temp.getContent());
+						// TODO Auto-generated method stub
+						ACLMessage recMessage = blockingReceive();
+						String updatedContent = recMessage.getContent();
+						Message temp = new Message();
+						ObjectMapper mapper = new ObjectMapper();
 
+						try {
+							temp = mapper.readValue(updatedContent, Message.class);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						System.out.println("topic " + temp.getTopic());
+						System.out.println("content received updated" + temp.getContent());
+
+					}
+				});
 			}
 		});
 	}
