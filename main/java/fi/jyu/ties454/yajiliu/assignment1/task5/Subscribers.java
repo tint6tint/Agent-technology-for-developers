@@ -2,6 +2,7 @@ package fi.jyu.ties454.yajiliu.assignment1.task5;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jade.core.AID;
@@ -11,50 +12,44 @@ import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 
 public class Subscribers extends Agent {
+
+	Message updatedContentFromPublisher = new Message();
+
 	@Override
 	protected void setup() {
 		String[] topics = { "DTIME", "P", "EXPTIME", "NTIME", "NP", "NEXPTIME", "DSPACE", "L", "PSPACE", "EXPSPACE",
 				"NSPACE", "NL", "NPSPACE", "NEXPSPACE" };
-		Message[] publishers = new Message[50];
-		for (int i = 0; i < 50; i++) {
-			Message temp = new Message();
-			int topicSeq = (int) (Math.random() * (topics.length - 1));
-			String topic = topics[topicSeq];
-			temp.setTopic(topic);
-			publishers[i] = temp;
-		}
 
+		int topicSeq = (int) (Math.random() * (topics.length - 1));
+		String topic = topics[topicSeq];
+		updatedContentFromPublisher.setTopic(topic);
+
+		ACLMessage sendMessage = new ACLMessage(ACLMessage.SUBSCRIBE);
+		sendMessage.addReceiver(new AID("Broker", AID.ISLOCALNAME));
+		sendMessage.setContent(updatedContentFromPublisher.getTopic());
+		send(sendMessage);
 		// TODO Auto-generated method stub
-		addBehaviour(new TickerBehaviour(this, 20000) {
+
+		addBehaviour(new CyclicBehaviour() {
+			@Override
+			public void action() {
+				ACLMessage recMessage = receive();
+				if (recMessage != null) {
+					int updatedContent = Integer.parseInt(recMessage.getContent());
+					updatedContentFromPublisher.setContent(updatedContent);
+				}else{
+					block();
+				}
+			}
+		});
+
+		addBehaviour(new TickerBehaviour(this,5000) {
 			@Override
 			protected void onTick() {
-				addBehaviour(new CyclicBehaviour() {
-					@Override
-					public void action() {
-						for (int i = 0; i < 50; i++) {
-							ACLMessage sendMessage = new ACLMessage(ACLMessage.CFP);
-							sendMessage.addReceiver(new AID("Broker", AID.ISLOCALNAME));
-							sendMessage.setContent(publishers[i].getTopic());
-							send(sendMessage);
-						}
-
-						// TODO Auto-generated method stub
-						ACLMessage recMessage = blockingReceive();
-						String updatedContent = recMessage.getContent();
-						Message temp = new Message();
-						ObjectMapper mapper = new ObjectMapper();
-
-						try {
-							temp = mapper.readValue(updatedContent, Message.class);
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						System.out.println("topic " + temp.getTopic());
-						System.out.println("content received updated" + temp.getContent());
-
-					}
-				});
+				// TODO Auto-generated method stub
+				System.out.println(getName());
+				System.out.println("topic= " + updatedContentFromPublisher.getTopic());
+				System.out.println("content received updated= " + updatedContentFromPublisher.getContent());
 			}
 		});
 	}
